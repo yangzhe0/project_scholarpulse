@@ -1,0 +1,9 @@
+[Unit]
+Description=Generate ScholarPulse daily reports
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/bin/scholarpulse generate --config %h/.config/scholarpulse/config.json
+TimeoutStartSec=10min

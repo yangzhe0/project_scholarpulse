@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="610" viewBox="0 0 1400 610" role="img" aria-labelledby="title desc">
+  <title id="title">ScholarPulse system architecture</title>
+  <desc id="desc">A local-first research intelligence pipeline from systemd scheduling through arXiv collection and Ollama summarization to Obsidian notes, indexes, result JSON, OpenClaw, and Telegram.</desc>
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 30px; font-weight: 700; fill: #0F172A; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 16px; font-weight: 400; fill: #64748B; }
+      .node-title { font-family: Arial, sans-serif; font-size: 17px; font-weight: 700; fill: #0F172A; text-anchor: middle; }
+      .node-text { font-family: Arial, sans-serif; font-size: 13px; font-weight: 400; fill: #64748B; text-anchor: middle; }
+      .label { font-family: Arial, sans-serif; font-size: 13px; font-weight: 600; fill: #64748B; text-anchor: middle; }
+      .line { fill: none; stroke: #64748B; stroke-width: 2; marker-end: url(#arrow); }
+      .blue { fill: #EFF6FF; stroke: #60A5FA; stroke-width: 1.5; }
+      .teal { fill: #F0FDFA; stroke: #2DD4BF; stroke-width: 1.5; }
+      .purple { fill: #F5F3FF; stroke: #A78BFA; stroke-width: 1.5; }
+      .orange { fill: #FFF7ED; stroke: #FB923C; stroke-width: 1.5; }
+      .green { fill: #ECFDF5; stroke: #34D399; stroke-width: 1.5; }
+      .result { fill: #F1F5F9; stroke: #475569; stroke-width: 1.5; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <rect width="1400" height="610" fill="#FFFFFF"/>
+  <text x="48" y="54" class="title">ScholarPulse · Research Intelligence Pipeline</text>
+  <text x="48" y="82" class="subtitle">Zero-dependency Python core · Local-first storage · Deterministic automation · Agent-decoupled delivery</text>
+  <rect x="24" y="106" width="1352" height="476" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+
+  <rect x="58" y="236" width="150" height="94" rx="6" class="blue"/>
+  <text x="133" y="272" class="node-title">systemd Timer</text>
+  <text x="133" y="297" class="node-text">19:55 · persistent</text>
+  <text x="133" y="316" class="node-text">failure-aware trigger</text>
+
+  <rect x="250" y="236" width="150" height="94" rx="6" class="blue"/>
+  <text x="325" y="272" class="node-title">Python CLI</text>
+  <text x="325" y="297" class="node-text">generate command</text>
+  <text x="325" y="316" class="node-text">single process core</text>
+
+  <rect x="442" y="236" width="150" height="94" rx="6" class="teal"/>
+  <text x="517" y="272" class="node-title">Direction Loop</text>
+  <text x="517" y="297" class="node-text">queries · quota</text>
+  <text x="517" y="316" class="node-text">history deduplication</text>
+
+  <rect x="634" y="236" width="150" height="94" rx="6" class="teal"/>
+  <text x="709" y="272" class="node-title">arXiv API</text>
+  <text x="709" y="297" class="node-text">Atom feed parsing</text>
+  <text x="709" y="316" class="node-text">latest-first selection</text>
+
+  <rect x="826" y="236" width="150" height="94" rx="6" class="purple"/>
+  <text x="901" y="272" class="node-title">Ollama</text>
+  <text x="901" y="297" class="node-text">structured Chinese brief</text>
+  <text x="901" y="316" class="node-text">per-paper fallback</text>
+
+  <rect x="1018" y="236" width="150" height="94" rx="6" class="orange"/>
+  <text x="1093" y="272" class="node-title">Renderer</text>
+  <text x="1093" y="297" class="node-text">Markdown + payload</text>
+  <text x="1093" y="316" class="node-text">stable output schema</text>
+
+  <rect x="1210" y="138" width="130" height="76" rx="6" class="green"/>
+  <text x="1275" y="169" class="node-title">Daily Note</text>
+  <text x="1275" y="193" class="node-text">Obsidian Markdown</text>
+
+  <rect x="1210" y="245" width="130" height="76" rx="6" class="green"/>
+  <text x="1275" y="276" class="node-title">Index</text>
+  <text x="1275" y="300" class="node-text">atomic rebuild</text>
+
+  <rect x="1210" y="352" width="130" height="76" rx="6" class="green"/>
+  <text x="1275" y="383" class="node-title">Result JSON</text>
+  <text x="1275" y="407" class="node-text">delivery contract</text>
+
+  <rect x="1018" y="467" width="150" height="76" rx="6" class="orange"/>
+  <text x="1093" y="498" class="node-title">OpenClaw</text>
+  <text x="1093" y="522" class="node-text">20:00 · read only</text>
+
+  <rect x="1210" y="467" width="130" height="76" rx="6" class="result"/>
+  <text x="1275" y="498" class="node-title">Telegram</text>
+  <text x="1275" y="522" class="node-text">announce delivery</text>
+
+  <path d="M208 283 H250" class="line"/>
+  <path d="M400 283 H442" class="line"/>
+  <path d="M592 283 H634" class="line"/>
+  <path d="M784 283 H826" class="line"/>
+  <path d="M976 283 H1018" class="line"/>
+  <path d="M1168 283 H1188 V176 H1210" class="line"/>
+  <path d="M1168 283 H1210" class="line"/>
+  <path d="M1168 283 H1188 V390 H1210" class="line"/>
+  <path d="M1275 428 V447 H1093 V467" class="line"/>
+  <path d="M1168 505 H1210" class="line"/>
+
+  <text x="229" y="269" class="label">exec</text>
+  <text x="613" y="269" class="label">HTTPS</text>
+  <text x="805" y="269" class="label">papers</text>
+  <text x="997" y="269" class="label">summary</text>
+  <text x="1190" y="491" class="label">message</text>
+</svg>

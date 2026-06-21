@@ -1,0 +1,32 @@
+{
+  "tls": {
+    "verify": true,
+    "ca_file": ""
+  },
+  "ollama": {
+    "enabled": true,
+    "base_url": "http://127.0.0.1:11434",
+    "model": "qwen3:30b",
+    "temperature": 0.2
+  },
+  "result_dir": "output/results",
+  "directions": [
+    {
+      "name": "ScholarPulse",
+      "description": "AI Agent 与 MCP 学术简报。",
+      "index_description": "ScholarPulse 学术信息监测索引。",
+      "tags": ["ScholarPulse", "学术监测", "AI-Agent", "MCP"],
+      "category": "科研",
+      "daily_dir": "output/科研/ScholarPulse",
+      "index_file": "output/科研/ScholarPulse.md",
+      "knowledge_dir": "科研/ScholarPulse",
+      "related_note": "[[项目/ScholarPulse|ScholarPulse]]",
+      "limit": 2,
+      "queries": [
+        "all:\"AI agent\" OR all:\"LLM agent\" OR all:\"language model agent\"",
+        "all:\"Model Context Protocol\" OR all:\"MCP server\" OR all:\"tool use\"",
+        "all:RAG AND all:agent"
+      ]
+    }
+  ]
+}

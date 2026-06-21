@@ -1,0 +1,10 @@
+[Unit]
+Description=Generate ScholarPulse daily reports before delivery
+
+[Timer]
+OnCalendar=*-*-* 19:55:00
+Persistent=true
+Unit=scholarpulse-daily.service
+
+[Install]
+WantedBy=timers.target

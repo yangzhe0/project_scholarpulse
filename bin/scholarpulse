@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT=$(readlink -f -- "${BASH_SOURCE[0]}")
+ROOT=$(cd -- "$(dirname -- "$SCRIPT")/.." && pwd)
+if [[ ${1:-} != "generate" ]]; then
+  set -- generate "$@"
+fi
+has_config=false
+for argument in "$@"; do
+  if [[ $argument == "--config" ]]; then
+    has_config=true
+    break
+  fi
+done
+default_config=${SCHOLARPULSE_CONFIG:-$HOME/.config/scholarpulse/config.json}
+if [[ $has_config == false && -f $default_config ]]; then
+  set -- "$@" --config "$default_config"
+fi
+exec /usr/bin/python3 "$ROOT/scholarpulse.py" "$@"

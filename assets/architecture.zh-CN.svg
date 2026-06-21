@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="610" viewBox="0 0 1400 610" role="img" aria-labelledby="title desc">
+  <title id="title">ScholarPulse 系统架构</title>
+  <desc id="desc">本地优先的研究情报流水线，由 systemd 调度，经过 arXiv 采集和 Ollama 摘要，最终生成 Obsidian 日报、索引、通知 JSON，并通过 OpenClaw 投递至 Telegram。</desc>
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 30px; font-weight: 700; fill: #0F172A; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 16px; font-weight: 400; fill: #64748B; }
+      .node-title { font-family: Arial, sans-serif; font-size: 17px; font-weight: 700; fill: #0F172A; text-anchor: middle; }
+      .node-text { font-family: Arial, sans-serif; font-size: 13px; font-weight: 400; fill: #64748B; text-anchor: middle; }
+      .label { font-family: Arial, sans-serif; font-size: 13px; font-weight: 600; fill: #64748B; text-anchor: middle; }
+      .line { fill: none; stroke: #64748B; stroke-width: 2; marker-end: url(#arrow); }
+      .blue { fill: #EFF6FF; stroke: #60A5FA; stroke-width: 1.5; }
+      .teal { fill: #F0FDFA; stroke: #2DD4BF; stroke-width: 1.5; }
+      .purple { fill: #F5F3FF; stroke: #A78BFA; stroke-width: 1.5; }
+      .orange { fill: #FFF7ED; stroke: #FB923C; stroke-width: 1.5; }
+      .green { fill: #ECFDF5; stroke: #34D399; stroke-width: 1.5; }
+      .result { fill: #F1F5F9; stroke: #475569; stroke-width: 1.5; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <rect width="1400" height="610" fill="#FFFFFF"/>
+  <text x="48" y="54" class="title">ScholarPulse · 研究情报流水线</text>
+  <text x="48" y="82" class="subtitle">零第三方 Python 依赖 · 本地优先存储 · 确定性自动化 · Agent 解耦投递</text>
+  <rect x="24" y="106" width="1352" height="476" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+
+  <rect x="58" y="236" width="150" height="94" rx="6" class="blue"/>
+  <text x="133" y="272" class="node-title">systemd 定时器</text>
+  <text x="133" y="297" class="node-text">19:55 · 持久化</text>
+  <text x="133" y="316" class="node-text">故障感知触发</text>
+
+  <rect x="250" y="236" width="150" height="94" rx="6" class="blue"/>
+  <text x="325" y="272" class="node-title">Python CLI</text>
+  <text x="325" y="297" class="node-text">generate 命令</text>
+  <text x="325" y="316" class="node-text">单进程核心</text>
+
+  <rect x="442" y="236" width="150" height="94" rx="6" class="teal"/>
+  <text x="517" y="272" class="node-title">方向循环</text>
+  <text x="517" y="297" class="node-text">查询 · 配额</text>
+  <text x="517" y="316" class="node-text">历史论文去重</text>
+
+  <rect x="634" y="236" width="150" height="94" rx="6" class="teal"/>
+  <text x="709" y="272" class="node-title">arXiv API</text>
+  <text x="709" y="297" class="node-text">Atom 数据解析</text>
+  <text x="709" y="316" class="node-text">最新优先筛选</text>
+
+  <rect x="826" y="236" width="150" height="94" rx="6" class="purple"/>
+  <text x="901" y="272" class="node-title">Ollama</text>
+  <text x="901" y="297" class="node-text">结构化中文研判</text>
+  <text x="901" y="316" class="node-text">单篇失败降级</text>
+
+  <rect x="1018" y="236" width="150" height="94" rx="6" class="orange"/>
+  <text x="1093" y="272" class="node-title">渲染器</text>
+  <text x="1093" y="297" class="node-text">Markdown + 消息</text>
+  <text x="1093" y="316" class="node-text">稳定输出协议</text>
+
+  <rect x="1210" y="138" width="130" height="76" rx="6" class="green"/>
+  <text x="1275" y="169" class="node-title">当日日报</text>
+  <text x="1275" y="193" class="node-text">Obsidian Markdown</text>
+
+  <rect x="1210" y="245" width="130" height="76" rx="6" class="green"/>
+  <text x="1275" y="276" class="node-title">知识索引</text>
+  <text x="1275" y="300" class="node-text">原子重建</text>
+
+  <rect x="1210" y="352" width="130" height="76" rx="6" class="green"/>
+  <text x="1275" y="383" class="node-title">通知 JSON</text>
+  <text x="1275" y="407" class="node-text">投递数据契约</text>
+
+  <rect x="1018" y="467" width="150" height="76" rx="6" class="orange"/>
+  <text x="1093" y="498" class="node-title">OpenClaw</text>
+  <text x="1093" y="522" class="node-text">20:00 · 只读</text>
+
+  <rect x="1210" y="467" width="130" height="76" rx="6" class="result"/>
+  <text x="1275" y="498" class="node-title">Telegram</text>
+  <text x="1275" y="522" class="node-text">announce 投递</text>
+
+  <path d="M208 283 H250" class="line"/>
+  <path d="M400 283 H442" class="line"/>
+  <path d="M592 283 H634" class="line"/>
+  <path d="M784 283 H826" class="line"/>
+  <path d="M976 283 H1018" class="line"/>
+  <path d="M1168 283 H1188 V176 H1210" class="line"/>
+  <path d="M1168 283 H1210" class="line"/>
+  <path d="M1168 283 H1188 V390 H1210" class="line"/>
+  <path d="M1275 428 V447 H1093 V467" class="line"/>
+  <path d="M1168 505 H1210" class="line"/>
+
+  <text x="229" y="269" class="label">执行</text>
+  <text x="613" y="269" class="label">HTTPS</text>
+  <text x="805" y="269" class="label">论文</text>
+  <text x="997" y="269" class="label">摘要</text>
+  <text x="1190" y="491" class="label">消息</text>
+</svg>
