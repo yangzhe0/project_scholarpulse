@@ -145,7 +145,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now scholarpulse-daily.timer
 ```
 
-Place the machine-specific configuration at `~/.config/scholarpulse/config.json` or set `SCHOLARPULSE_CONFIG`.
+Place the machine-specific configuration in `config.local.json` at the repository root. Git ignores this file. The CLI prefers `config.local.json` and falls back to the committed `config.json` example when it is absent. You can also set `SCHOLARPULSE_CONFIG` to use another path.
 
 ## Failure semantics
 

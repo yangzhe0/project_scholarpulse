@@ -124,6 +124,31 @@ class ScholarPulseTests(unittest.TestCase):
             collect.assert_not_called()
             self.assertTrue((root / "ScholarPulse.md").exists())
 
+    def test_backfill_keeps_latest_daily_date_in_index_frontmatter(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            direction = self.direction("ScholarPulse", "ScholarPulse", "ScholarPulse.md")
+            direction["daily_dir"] = str(root / "ScholarPulse")
+            direction["index_file"] = str(root / "ScholarPulse.md")
+            latest = root / "ScholarPulse/2026-07-16.md"
+            latest.parent.mkdir()
+            latest.write_text(
+                "## 重点论文与技术动态\n\n"
+                "### 1. Latest Paper\n\n"
+                "- **来源**：[arXiv](https://arxiv.org/abs/2607.10001v1)\n\n"
+                "#### 一句话结论\n\nLatest conclusion.\n",
+                encoding="utf-8",
+            )
+
+            with patch("workflow.collect_papers", return_value=[paper("2607.10002v1")]), patch(
+                "workflow.summarize",
+                return_value="#### 一句话结论\n\nBackfilled conclusion.",
+            ):
+                self.assertEqual(run({"tls": {}, "directions": [direction]}, "2026-07-15"), 0)
+
+            index_content = (root / "ScholarPulse.md").read_text(encoding="utf-8")
+            self.assertTrue(index_content.startswith("---\npublished: 2026-07-16\n"))
+
     def test_result_json_contains_telegram_message_for_all_directions(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

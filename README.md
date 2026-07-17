@@ -92,6 +92,8 @@ python3 scholarpulse.py generate --config config.json
 
 ## 多方向配置
 
+`config.json` 是可提交的示例；当前机器的真实配置放在仓库根目录的 `config.local.json`，并由 `.gitignore` 排除。CLI 默认优先读取 `config.local.json`，不存在时回退到 `config.json`。也可以通过 `SCHOLARPULSE_CONFIG` 指定其他位置。
+
 ```json
 {
   "tls": {
@@ -249,7 +251,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now scholarpulse-daily.timer
 ```
 
-机器专用配置放在 `~/.config/scholarpulse/config.json`，也可以通过 `SCHOLARPULSE_CONFIG` 指定其他路径。
+机器专用配置放在仓库根目录的 `config.local.json`，不会被 Git 提交。
 
 查看状态：
 

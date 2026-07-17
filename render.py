@@ -88,10 +88,12 @@ def parse_daily(note: str) -> tuple[list[str], list[dict]]:
 def index(daily_dir: Path, date: str, direction: dict) -> str:
     daily_rows = []
     paper_rows = []
+    latest_date = date
     for path in sorted(daily_dir.glob("*.md")):
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}\.md", path.name):
             continue
         note_date = path.stem
+        latest_date = max(latest_date, note_date)
         topics, papers = parse_daily(path.read_text(encoding="utf-8"))
         daily_rows.append(f"| [[{note_date}]] | {len(papers)} | {'、'.join(topics) or '暂无'} |")
         for paper in papers:
@@ -99,7 +101,7 @@ def index(daily_dir: Path, date: str, direction: dict) -> str:
             paper_rows.append(f"| [[{note_date}]] | {paper['summary']} | {title} |")
 
     lines = [
-        frontmatter(date, direction, index=True),
+        frontmatter(latest_date, direction, index=True),
         "## 概览",
         f"当前已收录 {len(daily_rows)} 天、{len(paper_rows)} 篇去重 arXiv 条目。",
         "## 日报", "", "| 日期 | 条目数 | 主题 |", "| --- | --- | --- |", *daily_rows,

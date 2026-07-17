@@ -5,5 +5,5 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=%h/bin/scholarpulse generate --config %h/.config/scholarpulse/config.json
+ExecStart=%h/bin/scholarpulse generate
 TimeoutStartSec=10min

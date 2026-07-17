@@ -13,7 +13,10 @@ for argument in "$@"; do
     break
   fi
 done
-default_config=${SCHOLARPULSE_CONFIG:-$HOME/.config/scholarpulse/config.json}
+default_config=${SCHOLARPULSE_CONFIG:-$ROOT/config.local.json}
+if [[ ! -f $default_config ]]; then
+  default_config=$ROOT/config.json
+fi
 if [[ $has_config == false && -f $default_config ]]; then
   set -- "$@" --config "$default_config"
 fi
