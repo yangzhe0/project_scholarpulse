@@ -1,0 +1,4 @@
+interface:
+  display_name: "Literature Brief v1.0 Beta"
+  short_description: "零配置跨源检索中文主题，并生成可追溯的中文文献简报"
+  default_prompt: "Use $literature-brief to find the latest two papers for my Chinese topic and produce a traceable Chinese research brief."
