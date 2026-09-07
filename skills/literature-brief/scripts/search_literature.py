@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import datetime as dt
 import html
 import json
@@ -18,12 +19,19 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Callable
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stdin.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 from topic_expansion import resolve_topic
 
-USER_AGENT = "literature-brief/1.0.0-beta (+local Codex skill)"
+USER_AGENT = "literature-brief/2.0.0 (+local Codex/Claude skill)"
 ALL_SOURCES = {
     "arxiv", "crossref", "europe-pmc", "biorxiv", "medrxiv",
 }
@@ -35,14 +43,15 @@ STOPWORDS = {
 BIOMEDICAL_TERMS = {
     "biomedical", "biology", "clinical", "disease", "drug", "genome", "genomic",
     "health", "medicine", "medical", "patient", "protein", "rna", "therapy",
-    "cancer", "cell", "epidemiology", "neuroscience", "pharmacology",
+    "cancer", "cell", "epidemiology", "neuroscience", "pharmacology", "vaccine",
+    "immunotherapy", "antibody", "virus", "infection",
 }
 ARXIV_TERMS = {
     "agent", "algorithm", "artificial intelligence", "computer", "computing",
     "deep learning", "language model", "machine learning", "mathematics", "physics",
     "robot", "statistics", "transformer", "quantum", "vision", "astronomy",
     "astrophysics", "cosmology", "planetary", "satellite", "moon", "saturn",
-    "neptune", "triton", "phoebe", "exoplanet",
+    "neptune", "triton", "phoebe", "exoplanet", "diffusion", "mllm", "lora",
 }
 
 
@@ -99,80 +108,97 @@ def normalized_title(value: Any) -> str:
 
 
 def normalize_word(word: str) -> str:
-    word = word.lower().strip(".-")
-    if len(word) > 5 and word.endswith("ies"):
-        return word[:-3] + "y"
-    if len(word) > 4 and word.endswith("s") and not word.endswith(("ss", "is", "us")):
-        return word[:-1]
-    return word
+    cleaned = re.sub(r"^[^a-z0-9]+|[^a-z0-9]+$", "", word.lower())
+    if len(cleaned) > 4 and cleaned.endswith("ies"):
+        return cleaned[:-3] + "y"
+    if len(cleaned) > 3 and cleaned.endswith("es"):
+        return cleaned[:-2]
+    if len(cleaned) > 3 and cleaned.endswith("s") and not cleaned.endswith("ss"):
+        return cleaned[:-1]
+    return cleaned
 
 
-def query_tokens(queries: list[str]) -> set[str]:
-    words: set[str] = set()
-    for query in queries:
-        for word in re.findall(r"[a-z0-9][a-z0-9+.-]*", query.lower()):
-            word = normalize_word(word)
-            if len(word) > 2 and word not in STOPWORDS and word not in {"all", "abs", "ti", "cat"}:
-                words.add(word)
-    return words
+def query_tokens(query: str) -> list[str]:
+    raw = [normalize_word(w) for w in re.findall(r"[a-z0-9]+", query.lower())]
+    filtered = [w for w in raw if w and w not in STOPWORDS]
+    return filtered or raw
 
 
 def relevance_score(paper: dict[str, Any], queries: list[str]) -> int:
-    title = clean_text(paper.get("title")).lower()
-    abstract = clean_text(paper.get("abstract")).lower()
-    metadata = " ".join(paper.get("categories") or []).lower()
-    title_words = [normalize_word(v) for v in re.findall(r"[a-z0-9][a-z0-9+.-]*", title)]
-    abstract_words = [normalize_word(v) for v in re.findall(r"[a-z0-9][a-z0-9+.-]*", abstract)]
-    metadata_words = {normalize_word(v) for v in re.findall(r"[a-z0-9][a-z0-9+.-]*", metadata)}
+    title_text = paper.get("title", "").lower()
+    abstract_text = paper.get("abstract", "").lower()
     score = 0
-    for token in query_tokens(queries):
-        score += 5 * title_words.count(token)
-        score += min(3, abstract_words.count(token))
-        score += 2 if token in metadata_words else 0
+    anchor_tokens = query_tokens(queries[0]) if queries else []
     for query in queries:
-        phrase = clean_text(re.sub(r"\b(?:and|or|not)\b", " ", query, flags=re.I)).lower()
-        phrase = re.sub(r"\s+", " ", phrase).strip(' "')
-        if len(phrase) >= 5:
-            if phrase in title:
-                score += 12
-            elif phrase in abstract:
-                score += 5
+        tokens = query_tokens(query)
+        if not tokens:
+            continue
+        phrase = " ".join(tokens)
+        if phrase in title_text:
+            score += 12
+        if phrase in abstract_text:
+            score += 6
+        title_matches = sum(1 for token in tokens if re.search(rf"\b{re.escape(token)}\b", title_text))
+        abstract_matches = sum(1 for token in tokens if re.search(rf"\b{re.escape(token)}\b", abstract_text))
+        score += title_matches * 3 + abstract_matches
+    if anchor_tokens:
+        matched_anchor = sum(1 for token in anchor_tokens if re.search(rf"\b{re.escape(token)}\b", f"{title_text} {abstract_text}"))
+        if matched_anchor < max(1, len(anchor_tokens) // 2):
+            score -= 10
+    if paper.get("evidence_level") == "abstract":
+        score += 2
+    if paper.get("publication_status") == "published":
+        score += 1
     return score
 
 
 def query_match_count(paper: dict[str, Any], query: str) -> int:
-    haystack = " ".join([
-        clean_text(paper.get("title")), clean_text(paper.get("abstract")),
-        " ".join(paper.get("categories") or []),
-    ]).lower()
-    tokens = query_tokens([query])
-    words = {normalize_word(v) for v in re.findall(r"[a-z0-9][a-z0-9+.-]*", haystack)}
-    return sum(1 for token in tokens if token in words)
+    text = f"{paper.get('title', '')} {paper.get('abstract', '')}".lower()
+    tokens = query_tokens(query)
+    return sum(1 for token in tokens if re.search(rf"\b{re.escape(token)}\b", text))
 
 
 def query_terms_are_close(paper: dict[str, Any], query: str) -> bool:
-    terms = list(query_tokens([query]))
-    if not terms:
+    tokens = query_tokens(query)
+    if len(tokens) <= 1:
+        return True
+    text = f"{paper.get('title', '')} {paper.get('abstract', '')}".lower()
+    words = re.findall(r"[a-z0-9]+", text)
+    positions = [i for i, w in enumerate(words) if normalize_word(w) in tokens]
+    if len(positions) < 2:
         return False
-    haystack = " ".join([
-        clean_text(paper.get("title")), clean_text(paper.get("abstract")),
-        " ".join(paper.get("categories") or []),
-    ]).lower()
-    words = [normalize_word(v) for v in re.findall(r"[a-z0-9][a-z0-9+.-]*", haystack)]
-    if len(terms) == 1:
-        return terms[0] in words
-    required = len(terms) if len(terms) <= 3 else max(3, (len(terms) + 1) // 2)
-    for start in range(len(words)):
-        window = set(words[start : start + 13])
-        if sum(1 for term in terms if term in window) >= required:
-            return True
-    return False
+    return any(positions[j + 1] - positions[j] <= 18 for j in range(len(positions) - 1))
 
 
 def sufficiently_relevant(paper: dict[str, Any], queries: list[str]) -> bool:
     for query in queries:
-        tokens = query_tokens([query])
-        required = 1 if len(tokens) <= 1 else 2
+        components = re.split(r"\s+AND\s+", query, flags=re.I)
+        if len(components) > 1:
+            component_matches = True
+            for component in components:
+                component_tokens = query_tokens(component)
+                component_required = 1 if len(component_tokens) == 1 else (len(component_tokens) * 2 + 2) // 3
+                if (
+                    query_match_count(paper, component) < component_required
+                    or not query_terms_are_close(paper, component)
+                ):
+                    component_matches = False
+                    break
+            if component_matches:
+                return True
+            continue
+        tokens = query_tokens(query)
+        if not tokens:
+            continue
+        phrase = " ".join(tokens)
+        text = f"{paper.get('title', '')} {paper.get('abstract', '')}".lower()
+        if phrase in text:
+            return True
+        # Two matching words are too permissive for compound topics: a paper
+        # about an artificial-satellite network can otherwise pass a query for
+        # natural-satellite orbital evolution. Require broader query coverage
+        # as the number of meaningful terms grows.
+        required = 1 if len(tokens) <= 1 else max(2, (len(tokens) * 3 + 4) // 5)
         if query_match_count(paper, query) >= required and query_terms_are_close(paper, query):
             return True
     return False
@@ -200,6 +226,12 @@ def request_bytes(url: str, *, headers: dict[str, str] | None = None, timeout: i
             except ValueError:
                 delay = 1.0
             time.sleep(delay)
+        except (ssl.SSLError, urllib.error.URLError, OSError) as exc:
+            # On Windows with local proxies, VPNs or MITM certs, fallback to unverified SSL context
+            if attempt == 0:
+                context = ssl._create_unverified_context()
+                continue
+            raise
     raise RuntimeError("unreachable HTTP retry state")
 
 
@@ -213,6 +245,7 @@ def blank_paper(source: str) -> dict[str, Any]:
         "first_available_date": "", "publication_date": "", "updated_date": "",
         "publication_status": "unknown", "publication_types": [], "venue": "",
         "categories": [], "identifiers": {}, "sources": [source], "links": [],
+        "pdf_url": "", "open_access_url": "",
         "evidence_level": "metadata", "relevance_score": 0, "selection_reason": "",
     }
 
@@ -237,6 +270,9 @@ def search_arxiv(query: str, start: str, end: str, limit: int, timeout: int) -> 
     arxiv_ns = "{http://arxiv.org/schemas/atom}"
     if re.search(r"\b(?:all|ti|abs|cat):", query):
         expression = query
+    elif re.search(r"\s+AND\s+", query, flags=re.I):
+        parts = re.split(r"\s+AND\s+", query, flags=re.I)
+        expression = " AND ".join(f'all:"{part.replace(chr(34), " ")}"' for part in parts if part.strip())
     else:
         expression = f'all:"{query.replace(chr(34), " ")}"'
     expression = f"({expression}) AND submittedDate:[{start.replace('-', '')}0000 TO {end.replace('-', '')}2359]"
@@ -253,6 +289,7 @@ def search_arxiv(query: str, start: str, end: str, limit: int, timeout: int) -> 
         link = f"https://arxiv.org/abs/{arxiv_id}" if arxiv_id else re.sub(r"^http://", "https://", raw_link)
         doi = normalize_doi(entry.findtext(f"{arxiv_ns}doi"))
         abstract = clean_text(entry.findtext(f"{atom}summary"))
+        pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf" if arxiv_id else ""
         paper.update({
             "title": clean_text(entry.findtext(f"{atom}title")),
             "abstract": abstract,
@@ -263,9 +300,13 @@ def search_arxiv(query: str, start: str, end: str, limit: int, timeout: int) -> 
             "publication_types": ["preprint"], "venue": "arXiv",
             "categories": [c.attrib.get("term", "") for c in entry.findall(f"{atom}category") if c.attrib.get("term")],
             "identifiers": {k: v for k, v in {"arxiv": arxiv_id, "doi": doi}.items() if v},
+            "pdf_url": pdf_url,
+            "open_access_url": link,
             "evidence_level": "abstract" if abstract else "metadata",
         })
         add_link(paper, "arxiv", link)
+        if pdf_url:
+            add_link(paper, "pdf", pdf_url)
         if doi:
             add_link(paper, "doi", f"https://doi.org/{doi}")
         set_canonical_id(paper)
@@ -275,8 +316,9 @@ def search_arxiv(query: str, start: str, end: str, limit: int, timeout: int) -> 
 
 
 def search_crossref(query: str, start: str, end: str, limit: int, timeout: int) -> list[dict[str, Any]]:
+    query_for_api = re.sub(r"\s+AND\s+", " ", query, flags=re.I)
     params: dict[str, Any] = {
-        "query.bibliographic": query,
+        "query.bibliographic": query_for_api,
         "filter": f"from-pub-date:{start},until-pub-date:{end}",
         "rows": min(limit, 100), "sort": "published", "order": "desc",
     }
@@ -299,6 +341,12 @@ def search_crossref(query: str, start: str, end: str, limit: int, timeout: int) 
         abstract = clean_text(item.get("abstract"))
         crossref_type = clean_text(item.get("type"))
         is_preprint = crossref_type == "posted-content" or clean_text(item.get("subtype")).lower() == "preprint"
+        pdf_url = ""
+        for link_item in item.get("link") or []:
+            content_type = clean_text(link_item.get("content-type")).lower()
+            if "application/pdf" in content_type and link_item.get("URL"):
+                pdf_url = clean_text(link_item.get("URL"))
+                break
         paper = blank_paper("crossref")
         paper.update({
             "title": title, "abstract": abstract, "authors": authors,
@@ -309,10 +357,14 @@ def search_crossref(query: str, start: str, end: str, limit: int, timeout: int) 
             "venue": clean_text(venue_values[0] if venue_values else ""),
             "categories": [clean_text(v) for v in item.get("subject") or [] if clean_text(v)],
             "identifiers": {"doi": doi} if doi else {},
+            "pdf_url": pdf_url,
+            "open_access_url": item.get("URL") or (f"https://doi.org/{doi}" if doi else ""),
             "evidence_level": "abstract" if abstract else "metadata",
         })
         if doi:
             add_link(paper, "doi", f"https://doi.org/{doi}")
+        if pdf_url:
+            add_link(paper, "pdf", pdf_url)
         add_link(paper, "publisher", item.get("URL"))
         set_canonical_id(paper)
         if title:
@@ -345,6 +397,8 @@ def search_europe_pmc(query: str, start: str, end: str, limit: int, timeout: int
         author_list = (item.get("authorList") or {}).get("author") or []
         authors = [clean_text(a.get("fullName")) for a in author_list if clean_text(a.get("fullName"))]
         abstract = clean_text(item.get("abstractText"))
+        pdf_url = f"https://pmc.ncbi.nlm.nih.gov/articles/{pmcid}/pdf/" if pmcid else ""
+        oa_url = f"https://europepmc.org/article/{source}/{record_id}" if record_id and source else ""
         paper = blank_paper("europe-pmc")
         paper.update({
             "title": clean_text(item.get("title")), "abstract": abstract,
@@ -355,6 +409,8 @@ def search_europe_pmc(query: str, start: str, end: str, limit: int, timeout: int
             "publication_types": types,
             "venue": clean_text(item.get("journalTitle") or ((item.get("journalInfo") or {}).get("journal") or {}).get("title")),
             "identifiers": {k: v for k, v in {"doi": doi, "pmid": pmid, "pmcid": pmcid}.items() if v},
+            "pdf_url": pdf_url,
+            "open_access_url": oa_url,
             "evidence_level": "abstract" if abstract else "metadata",
         })
         if doi:
@@ -363,8 +419,10 @@ def search_europe_pmc(query: str, start: str, end: str, limit: int, timeout: int
             add_link(paper, "pubmed", f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/")
         if pmcid:
             add_link(paper, "pmc", f"https://pmc.ncbi.nlm.nih.gov/articles/{pmcid}/")
+        if pdf_url:
+            add_link(paper, "pdf", pdf_url)
         if record_id and source:
-            add_link(paper, "europe-pmc", f"https://europepmc.org/article/{source}/{record_id}")
+            add_link(paper, "europe-pmc", oa_url)
         set_canonical_id(paper)
         if paper["title"]:
             papers.append(paper)
@@ -387,6 +445,7 @@ def search_biorxiv_server(server: str, query: str, start: str, end: str, limit: 
             if published_doi and doi:
                 identifiers["preprint_doi"] = doi
             abstract = clean_text(item.get("abstract"))
+            pdf_url = f"https://www.{server}.org/content/{doi}v1.full.pdf" if doi else ""
             paper = blank_paper(server)
             paper.update({
                 "title": clean_text(item.get("title")), "abstract": abstract,
@@ -397,12 +456,16 @@ def search_biorxiv_server(server: str, query: str, start: str, end: str, limit: 
                 "publication_types": ["preprint"], "venue": server,
                 "categories": [clean_text(item.get("category"))] if item.get("category") else [],
                 "identifiers": identifiers,
+                "pdf_url": pdf_url,
+                "open_access_url": f"https://doi.org/{doi}" if doi else "",
                 "evidence_level": "abstract" if abstract else "metadata",
             })
             if published_doi:
                 add_link(paper, "doi", f"https://doi.org/{published_doi}")
             if doi:
                 add_link(paper, server, f"https://doi.org/{doi}")
+            if pdf_url:
+                add_link(paper, "pdf", pdf_url)
             set_canonical_id(paper)
             if paper["title"] and sufficiently_relevant(paper, [query]):
                 papers.append(paper)
@@ -432,211 +495,372 @@ def paper_keys(paper: dict[str, Any]) -> list[str]:
 
 
 def merge_lists(left: list[Any], right: list[Any]) -> list[Any]:
-    result = list(left)
-    seen = {json.dumps(item, sort_keys=True, ensure_ascii=False) for item in result}
-    for item in right:
-        marker = json.dumps(item, sort_keys=True, ensure_ascii=False)
-        if marker not in seen:
-            seen.add(marker)
-            result.append(item)
-    return result
-
-
-def merge_paper(target: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
-    for field in ("authors", "publication_types", "categories", "sources", "links"):
-        target[field] = merge_lists(target.get(field) or [], incoming.get(field) or [])
-    target["identifiers"] = {**(target.get("identifiers") or {}), **(incoming.get("identifiers") or {})}
-    for field in ("title", "venue"):
-        if len(clean_text(incoming.get(field))) > len(clean_text(target.get(field))):
-            target[field] = incoming[field]
-    if len(clean_text(incoming.get("abstract"))) > len(clean_text(target.get("abstract"))):
-        target["abstract"] = incoming["abstract"]
-        target["evidence_level"] = incoming.get("evidence_level", "abstract")
-    dates = [v for v in [target.get("first_available_date"), incoming.get("first_available_date")] if v]
-    target["first_available_date"] = min(dates) if dates else ""
-    publication_dates = [v for v in [target.get("publication_date"), incoming.get("publication_date")] if v]
-    target["publication_date"] = min(publication_dates) if publication_dates else ""
-    updated_dates = [v for v in [target.get("updated_date"), incoming.get("updated_date")] if v]
-    target["updated_date"] = max(updated_dates) if updated_dates else ""
-    if incoming.get("publication_status") == "published" or target.get("publication_status") == "published":
-        target["publication_status"] = "published"
-    elif incoming.get("publication_status") == "preprint" or target.get("publication_status") == "preprint":
-        target["publication_status"] = "preprint"
-    set_canonical_id(target)
-    return target
-
-
-def deduplicate(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    merged: list[dict[str, Any]] = []
-    lookup: dict[str, int] = {}
-    for paper in papers:
-        matching = {lookup[key] for key in paper_keys(paper) if key in lookup}
-        if matching:
-            index = min(matching)
-            merge_paper(merged[index], paper)
-        else:
-            index = len(merged)
-            merged.append(paper)
-        for key in paper_keys(merged[index]):
-            lookup[key] = index
+    merged: list[Any] = []
+    for item in [*left, *right]:
+        if item not in merged:
+            merged.append(item)
     return merged
 
 
+def merge_paper(target: dict[str, Any], source: dict[str, Any]) -> None:
+    for field in ("title", "venue", "first_available_date", "publication_date", "updated_date", "pdf_url", "open_access_url"):
+        if not target.get(field) and source.get(field):
+            target[field] = source[field]
+    if len(source.get("abstract", "")) > len(target.get("abstract", "")):
+        target["abstract"] = source["abstract"]
+    if source.get("evidence_level") == "abstract" and target.get("evidence_level") != "abstract":
+        target["evidence_level"] = "abstract"
+    if source.get("publication_status") == "published":
+        target["publication_status"] = "published"
+    elif target.get("publication_status") == "unknown" and source.get("publication_status"):
+        target["publication_status"] = source["publication_status"]
+    target["sources"] = merge_lists(target.get("sources") or [], source.get("sources") or [])
+    target["categories"] = merge_lists(target.get("categories") or [], source.get("categories") or [])
+    target["publication_types"] = merge_lists(target.get("publication_types") or [], source.get("publication_types") or [])
+    existing_links = {(item.get("source"), item.get("url")) for item in target.get("links") or []}
+    for item in source.get("links") or []:
+        pair = (item.get("source"), item.get("url"))
+        if pair not in existing_links:
+            target.setdefault("links", []).append(item)
+            existing_links.add(pair)
+    ids = target.setdefault("identifiers", {})
+    for key, value in (source.get("identifiers") or {}).items():
+        if not ids.get(key) and value:
+            ids[key] = value
+    set_canonical_id(target)
+
+
+def deduplicate(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_key: dict[str, dict[str, Any]] = {}
+    deduped: list[dict[str, Any]] = []
+    for paper in papers:
+        keys = paper_keys(paper)
+        existing = None
+        for key in keys:
+            if key in by_key:
+                existing = by_key[key]
+                break
+        if not existing:
+            title = paper.get("title", "")
+            for candidate in deduped:
+                if title_similarity(title, candidate.get("title", "")) >= 0.88:
+                    existing = candidate
+                    break
+        if existing:
+            merge_paper(existing, paper)
+            for key in keys:
+                by_key[key] = existing
+        else:
+            deduped.append(paper)
+            for key in keys:
+                by_key[key] = paper
+    return deduped
+
+
 def title_similarity(left: str, right: str) -> float:
-    a = set(re.findall(r"[a-z0-9]+", left.lower())) - STOPWORDS
-    b = set(re.findall(r"[a-z0-9]+", right.lower())) - STOPWORDS
-    return len(a & b) / len(a | b) if a and b else 0.0
+    t1 = set(query_tokens(left))
+    t2 = set(query_tokens(right))
+    if not t1 or not t2:
+        return 0.0
+    return len(t1 & t2) / len(t1 | t2)
 
 
 def select_papers(
-    papers: list[dict[str, Any]], queries: list[str], count: int, sort_mode: str = "latest"
+    papers: list[dict[str, Any]], queries: list[str], count: int, sort_policy: str = "latest",
+    exclude_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
+    filtered = []
     for paper in papers:
-        paper["relevance_score"] = relevance_score(paper, queries)
-    anchor_query = queries[0]
-    eligible = [
-        p for p in papers
-        if p["relevance_score"] > 0
-        and p.get("title")
-        and sufficiently_relevant(p, [anchor_query])
-    ]
-    if sort_mode == "relevance":
-        eligible.sort(key=lambda p: (
-            p["relevance_score"], 1 if p.get("abstract") else 0,
-            p.get("first_available_date") or "",
-        ), reverse=True)
+        if exclude_ids:
+            canonical = (paper.get("canonical_id") or "").lower()
+            ids = [canonical] + [f"{k}:{v}".lower() for k, v in (paper.get("identifiers") or {}).items()]
+            if any(ident in exclude_ids for ident in ids if ident):
+                continue
+        if sufficiently_relevant(paper, queries):
+            paper["relevance_score"] = relevance_score(paper, queries)
+            filtered.append(paper)
+    if sort_policy == "relevance":
+        filtered.sort(
+            key=lambda p: (p.get("relevance_score", 0), p.get("first_available_date", ""), len(p.get("abstract", ""))),
+            reverse=True,
+        )
     else:
-        eligible.sort(key=lambda p: (
-            p.get("first_available_date") or "", p["relevance_score"],
-            1 if p.get("abstract") else 0,
-        ), reverse=True)
-    selected: list[dict[str, Any]] = []
-    for paper in eligible:
-        if sort_mode == "relevance" and any(
-            title_similarity(paper["title"], other["title"]) >= 0.82 for other in selected
-        ):
-            continue
-        topical_reason = (
-            "标题和摘要直接匹配检索主题"
-            if paper.get("abstract") and paper["relevance_score"] >= 8
-            else "标题或元数据与检索主题匹配"
+        filtered.sort(
+            key=lambda p: (p.get("first_available_date", ""), p.get("relevance_score", 0), len(p.get("abstract", ""))),
+            reverse=True,
         )
-        paper["selection_reason"] = (
-            topical_reason if sort_mode == "relevance" else f"在主题相关结果中首次公开日期较新；{topical_reason}"
-        )
-        if len(paper.get("sources") or []) > 1:
-            paper["selection_reason"] += f"，并由 {len(paper['sources'])} 个来源交叉收录"
-        selected.append(paper)
-        if len(selected) >= count:
-            break
+    selected = filtered[:count]
+    for index, paper in enumerate(selected, 1):
+        reason = "相关性门槛达标，在选定窗口内首次公开时间最新"
+        if sort_policy == "relevance":
+            reason = "主题契合度与关键词匹配得分最高"
+        paper["selection_reason"] = f"第 {index} 顺位选中：{reason}（评分 {paper.get('relevance_score', 0)}）"
     return selected
 
 
-def annotate_screening(
-    papers: list[dict[str, Any]], selected: list[dict[str, Any]], queries: list[str]
-) -> dict[str, int]:
-    selected_ids = {paper.get("canonical_id") for paper in selected}
-    selected_titles = [paper.get("title", "") for paper in selected]
-    summary: dict[str, int] = {}
-    for paper in papers:
-        if paper.get("canonical_id") in selected_ids:
-            decision = "selected"
-            reason = ""
-        elif not paper.get("title"):
-            decision = "excluded"
-            reason = "missing-title"
-        elif paper.get("relevance_score", 0) <= 0:
-            decision = "excluded"
-            reason = "no-query-signal"
-        elif not sufficiently_relevant(paper, [queries[0]]):
-            decision = "excluded"
-            reason = "anchor-topic-mismatch"
-        elif any(title_similarity(paper["title"], title) >= 0.82 for title in selected_titles):
-            decision = "excluded"
-            reason = "near-duplicate-of-selected"
+def annotate_screening(candidates: list[dict[str, Any]], selected: list[dict[str, Any]], queries: list[str]) -> dict[str, Any]:
+    selected_ids = {p.get("canonical_id") for p in selected}
+    excluded = []
+    for candidate in candidates:
+        if candidate.get("canonical_id") in selected_ids:
+            continue
+        if not sufficiently_relevant(candidate, queries):
+            reason = "主题不匹配：标题或摘要缺少足够的核心词近邻匹配"
         else:
-            decision = "excluded"
-            reason = "below-selection-cutoff"
-        paper["screening_decision"] = decision
-        paper["exclusion_reason"] = reason
-        key = "selected" if decision == "selected" else reason
-        summary[key] = summary.get(key, 0) + 1
-    return summary
+            reason = "达到相关性门槛，但在最新时间或排序截断中落选"
+        excluded.append({
+            "canonical_id": candidate.get("canonical_id"),
+            "title": candidate.get("title"),
+            "source": (candidate.get("sources") or ["unknown"])[0],
+            "first_available_date": candidate.get("first_available_date"),
+            "relevance_score": candidate.get("relevance_score", 0),
+            "reason": reason,
+        })
+    return {
+        "candidate_count": len(candidates),
+        "selected_count": len(selected),
+        "excluded_count": len(excluded),
+        "excluded": excluded,
+    }
 
 
-def choose_auto_sources(topic_and_queries: str) -> list[str]:
-    text = topic_and_queries.lower()
-    if any(term in text for term in BIOMEDICAL_TERMS):
+def choose_auto_sources(topic: str) -> list[str]:
+    lowered = topic.lower()
+    if any(term in lowered for term in BIOMEDICAL_TERMS):
         return ["europe-pmc", "biorxiv", "medrxiv", "crossref"]
-    if any(term in text for term in ARXIV_TERMS):
+    if any(term in lowered for term in ARXIV_TERMS):
         return ["arxiv", "crossref"]
     return ["arxiv", "crossref"]
 
 
-def parse_sources(raw: str, topic_and_queries: str) -> list[str]:
-    if raw == "auto":
-        return choose_auto_sources(topic_and_queries)
-    if raw == "all":
+def parse_sources(value: str, topic: str) -> list[str]:
+    cleaned = value.strip().lower()
+    if not cleaned or cleaned == "auto":
+        return choose_auto_sources(topic)
+    if cleaned == "all":
         return sorted(ALL_SOURCES)
-    sources = []
-    for value in raw.split(","):
-        value = value.strip().lower()
-        if value and value not in sources:
-            sources.append(value)
-    unknown = sorted(set(sources) - ALL_SOURCES)
-    if unknown:
-        raise ValueError(f"unknown source(s): {', '.join(unknown)}")
-    if not sources:
-        raise ValueError("at least one source is required")
-    return sources
+    requested = [s.strip() for s in cleaned.split(",") if s.strip()]
+    invalid = [s for s in requested if s not in ALL_SOURCES]
+    if invalid:
+        raise ValueError(f"unknown source(s): {', '.join(invalid)}")
+    return requested
 
 
 def date_windows(date_from: str | None, date_to: str | None) -> list[tuple[str, str]]:
-    today = dt.date.today()
     if date_from or date_to:
-        end = dt.date.fromisoformat(date_to) if date_to else today
-        start = dt.date.fromisoformat(date_from) if date_from else end - dt.timedelta(days=6)
-        if start > end:
-            raise ValueError("--from must be on or before --to")
-        return [(start.isoformat(), end.isoformat())]
+        start = date_from or "1970-01-01"
+        end = date_to or dt.date.today().isoformat()
+        return [(start, end)]
+    today = dt.date.today()
     return [
-        ((today - dt.timedelta(days=days - 1)).isoformat(), today.isoformat())
-        for days in (7, 30, 90)
+        ((today - dt.timedelta(days=7)).isoformat(), today.isoformat()),
+        ((today - dt.timedelta(days=30)).isoformat(), (today - dt.timedelta(days=8)).isoformat()),
+        ((today - dt.timedelta(days=90)).isoformat(), (today - dt.timedelta(days=31)).isoformat()),
     ]
 
 
-def source_searcher(source: str) -> Callable[[str, str, str, int, int], list[dict[str, Any]]]:
-    if source == "arxiv":
+def source_searcher(name: str) -> Callable[..., list[dict[str, Any]]]:
+    if name == "arxiv":
         return search_arxiv
-    if source == "crossref":
+    if name == "crossref":
         return search_crossref
-    if source == "europe-pmc":
+    if name == "europe-pmc":
         return search_europe_pmc
-    if source in {"biorxiv", "medrxiv"}:
-        return lambda query, start, end, limit, timeout: search_biorxiv_server(
-            source, query, start, end, limit, timeout
+    if name == "biorxiv":
+        return lambda q, s, e, l, t: search_biorxiv_server("biorxiv", q, s, e, l, t)
+    if name == "medrxiv":
+        return lambda q, s, e, l, t: search_biorxiv_server("medrxiv", q, s, e, l, t)
+    raise ValueError(f"unsupported source: {name}")
+
+
+def paper_bibtex(paper: dict[str, Any]) -> str:
+    title = paper.get("title", "Untitled")
+    authors = paper.get("authors") or ["Anonymous"]
+    first_author = re.sub(r"\W+", "", authors[0].split()[-1]) if authors else "Paper"
+    year = (paper.get("first_available_date") or dt.date.today().isoformat())[:4]
+    first_word = re.sub(r"\W+", "", title.split()[0]) if title else "Work"
+    cite_key = f"{first_author}{year}{first_word}"
+    author_str = " and ".join(authors[:6])
+    lines = [
+        f"@article{{{cite_key},",
+        f"  title = {{{title}}},",
+        f"  author = {{{author_str}}},",
+        f"  year = {{{year}}},",
+    ]
+    venue = paper.get("venue")
+    if venue:
+        lines.append(f"  journal = {{{venue}}},")
+    doi = (paper.get("identifiers") or {}).get("doi")
+    if doi:
+        lines.append(f"  doi = {{{doi}}},")
+    arxiv = (paper.get("identifiers") or {}).get("arxiv")
+    if arxiv:
+        lines.append(f"  eprint = {{{arxiv}}},")
+        lines.append(f"  archivePrefix = {{arXiv}},")
+    if paper.get("pdf_url"):
+        lines.append(f"  url = {{{paper['pdf_url']}}},")
+    elif paper.get("links"):
+        lines.append(f"  url = {{{paper['links'][0]['url']}}},")
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def health_check(timeout: int = 6) -> dict[str, Any]:
+    probes = {
+        "arxiv": "https://export.arxiv.org/api/query?search_query=all:electron&start=0&max_results=1",
+        "crossref": "https://api.crossref.org/works?query.bibliographic=electron&rows=1",
+        "europe-pmc": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=electron&format=json&pageSize=1",
+        "biorxiv": "https://api.biorxiv.org/details/biorxiv/2026-08-01/2026-08-02/0",
+        "medrxiv": "https://api.biorxiv.org/details/medrxiv/2026-08-01/2026-08-02/0",
+    }
+    def probe(name: str, url: str) -> tuple[str, dict[str, Any]]:
+        t0 = time.perf_counter()
+        try:
+            _ = request_bytes(url, timeout=timeout)
+            elapsed = round((time.perf_counter() - t0) * 1000, 1)
+            return name, {"status": "ok", "latency_ms": elapsed, "error": None}
+        except Exception as e:
+            elapsed = round((time.perf_counter() - t0) * 1000, 1)
+            return name, {"status": "error", "latency_ms": elapsed, "error": clean_text(e)}
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(probes)) as executor:
+        completed = dict(executor.map(lambda item: probe(*item), probes.items()))
+    return {name: completed[name] for name in probes}
+
+
+def render_markdown_brief(result: dict[str, Any], include_bibtex: bool = True) -> str:
+    topic = result.get("topic", "未知主题")
+    date_from = result.get("date_from", "")
+    date_to = result.get("date_to", "")
+    resolution = result.get("topic_resolution") or {}
+    queries = result.get("queries") or []
+    retrieved_at = result.get("retrieved_at", "")
+    sources = ", ".join(result.get("sources_requested") or [])
+    sort_policy = "相关性降序" if result.get("sort") == "relevance" else "首次公开日期倒序"
+    selected = result.get("selected") or []
+    health = result.get("source_health") or {}
+
+    lines = [
+        f"# {topic} 研究简报",
+        "",
+        f"- **日期范围**：{date_from} 至 {date_to}",
+        f"- **主题解析**：{resolution.get('input_topic', topic)} → `{resolution.get('anchor_query', queries[0] if queries else '')}`；扩展词：`{', '.join(queries[1:]) or '无'}`",
+        f"- **检索来源**：{sources}",
+        f"- **检索时间**：{retrieved_at}",
+        f"- **排序策略**：{sort_policy}",
+        "- **证据层级**：摘要级研判（零配置开放检索）",
+        "",
+        "## 来源状态",
+        "",
+        "| 来源 | 状态 | 请求数 | 返回记录 | 说明 |",
+        "| --- | --- | ---: | ---: | --- |",
+    ]
+    status_map = {
+        "success-with-results": "成功且有结果",
+        "success-no-results": "成功但无结果",
+        "failed": "请求失败",
+    }
+    for src, info in health.items():
+        status_zh = status_map.get(info.get("status"), info.get("status"))
+        err_msg = info.get("errors", [{}])[0].get("error", "正常") if info.get("errors") else "正常"
+        lines.append(
+            f"| {src} | {status_zh} | {info.get('requests_attempted', 0)} | {info.get('records_returned', 0)} | {err_msg[:40]} |"
         )
-    raise ValueError(f"unsupported source: {source}")
+
+    lines.extend([
+        "",
+        "## 今日速览",
+        "",
+        "| 序号 | 标题 | 文献状态 | 日期 | PDF直达 | 入选理由 |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ])
+    if not selected:
+        lines.append("| - | 未检索到符合门槛的候选文献 | - | - | - | 请扩大检索日期窗口或补充关键词 |")
+    else:
+        for idx, p in enumerate(selected, 1):
+            title = p.get("title", "Untitled")
+            status = "已发表" if p.get("publication_status") == "published" else "预印本"
+            date = p.get("first_available_date") or "未知"
+            pdf_link = f"[PDF下载]({p['pdf_url']})" if p.get("pdf_url") else "暂无直链"
+            reason = p.get("selection_reason", "符合主题要求")
+            main_url = p.get("open_access_url") or (p["links"][0]["url"] if p.get("links") else "")
+            title_display = f"[{title}]({main_url})" if main_url else title
+            lines.append(f"| {idx} | {title_display} | {status} | {date} | {pdf_link} | {reason} |")
+
+    lines.extend(["", "## 重点论文研判", ""])
+    for idx, p in enumerate(selected, 1):
+        title = p.get("title", "Untitled")
+        authors = ", ".join(p.get("authors") or []) or "未知"
+        status = "已正式发表" if p.get("publication_status") == "published" else "预印本 (Preprint)"
+        venue = p.get("venue") or "未收录期刊信息"
+        date = p.get("first_available_date") or "未知"
+        link_items = [f"[{lk['source'].upper()}]({lk['url']})" for lk in p.get("links") or []]
+        links_str = " · ".join(link_items) or "无外部链接"
+        pdf_badge = f" · **[直达PDF全文]({p['pdf_url']})**" if p.get("pdf_url") else ""
+
+        lines.extend([
+            f"### {idx}. {title}",
+            "",
+            f"- **作者**：{authors}",
+            f"- **首次公开日期**：{date}",
+            f"- **文献状态**：{status}",
+            f"- **发表载体/分类**：{venue}",
+            f"- **来源链接**：{links_str}{pdf_badge}",
+            "- **分析依据**：论文摘要（Abstract-level analysis）",
+            "",
+            "#### 一句话结论",
+            f"> 本文声称或证明了什么（根据摘要总结核心贡献）。",
+            "",
+            "#### 核心内容与动机",
+            f"- **研究背景**：针对什么现实痛点或科学问题；",
+            f"- **主要工作**：提出了何种框架、模型、机制或实验方案；",
+            f"- **与主题关联**：如何体现与 `{topic}` 领域的深层协同。",
+            "",
+            "#### 方法与数据依据",
+            f"- **实验环境/数据集**：摘要明确标注的数据与基线（若无请标“摘要未说明”）；",
+            f"- **关键指标与结果**：核心性能提升幅度或关键实验结论。",
+            "",
+            "#### 价值判断与启发",
+            "- **关注理由**：对课题研究或技术落地的借鉴意义；",
+            "- **复用潜力**：可迁移的方法论、代码实现或算法思路。",
+            "",
+            "#### 局限性与待核验点",
+            "- 摘要自述局限或需精读全文进一步确认的关键细节。",
+            "",
+            "> [!abstract]- 英文原始摘要",
+            f"> {p.get('abstract') or '无可用摘要文本'}",
+            "",
+        ])
+        if include_bibtex:
+            lines.extend([
+                "```bibtex",
+                paper_bibtex(p),
+                "```",
+                "",
+            ])
+
+    lines.extend([
+        "## 检索说明",
+        "",
+        f"- 检索范围覆盖 {sources}，优先抓取全文/开源直接下载链接；",
+        "- 所有事实性结论均严格追溯至学术检索元数据与原始摘要，未编造未经核验的实验指标；",
+        "- 本报告生成于本地对话环境，无需配置外部商业 API Key。",
+        "",
+    ])
+    return "\n".join(lines)
 
 
 def search(args: argparse.Namespace) -> dict[str, Any]:
     resolution = resolve_topic(args.topic)
+    queries: list[str] = []
     if args.query:
-        queries = args.query
-        resolution = {
-            **resolution,
-            "anchor_query": queries[0],
-            "queries": queries,
-            "resolution_method": "explicit-queries",
-            "needs_web_resolution": False,
-        }
-    elif resolution["needs_web_resolution"]:
-        raise ValueError(
-            "Chinese topic is not in the curated glossary. Resolve its canonical English "
-            "term and synonyms online, then pass the verified queries with repeated --query."
-        )
+        queries.extend(args.query)
+    elif resolution.get("queries"):
+        queries.extend(resolution["queries"])
     else:
-        queries = resolution["queries"]
+        queries.append(args.topic)
+    queries = list(dict.fromkeys(queries))
+
     source_argument = args.sources
     if source_argument == "auto" and resolution.get("sources"):
         source_argument = ",".join(resolution["sources"])
@@ -655,32 +879,55 @@ def search(args: argparse.Namespace) -> dict[str, Any]:
         for source in sources
     }
 
+    exclude_set: set[str] = set()
+    if args.exclude_ids:
+        raw_val = args.exclude_ids.strip()
+        path = Path(raw_val)
+        if path.exists() and path.is_file():
+            try:
+                content = path.read_text(encoding="utf-8")
+                exclude_set = {line.strip().lower() for line in content.splitlines() if line.strip()}
+            except Exception:
+                pass
+        else:
+            exclude_set = {v.strip().lower() for v in raw_val.split(",") if v.strip()}
+
+    def search_one_source(source: str, start: str, end: str) -> tuple[str, list[dict[str, Any]], list[dict[str, str]], int]:
+        papers_found: list[dict[str, Any]] = []
+        source_errors: list[dict[str, str]] = []
+        succeeded = 0
+        searcher = source_searcher(source)
+        source_queries = [queries[0]] if source in {"biorxiv", "medrxiv"} else queries
+        for query in source_queries:
+            try:
+                papers_found.extend(searcher(query, start, end, args.max_source_results, args.timeout))
+                succeeded += 1
+            except Exception as exc:
+                source_errors.append({
+                    "source": source, "window": f"{start}/{end}", "query": query,
+                    "error": clean_text(exc),
+                })
+            if args.delay:
+                time.sleep(args.delay)
+        return source, papers_found, source_errors, succeeded
+
     for start, end in windows:
         window_sources: list[str] = []
-        for source in sources:
-            searcher = source_searcher(source)
-            source_queries = [queries[0]] if source in {"biorxiv", "medrxiv"} else queries
-            for query in source_queries:
-                health[source]["requests_attempted"] += 1
-                try:
-                    papers = searcher(query, start, end, args.max_source_results, args.timeout)
-                    all_papers.extend(papers)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(sources)) as executor:
+            outcomes = executor.map(lambda source: search_one_source(source, start, end), sources)
+            for source, papers, source_errors, succeeded in outcomes:
+                attempted = 1 if source in {"biorxiv", "medrxiv"} else len(queries)
+                health[source]["requests_attempted"] += attempted
+                health[source]["requests_succeeded"] += succeeded
+                health[source]["records_returned"] += len(papers)
+                health[source]["errors"].extend(source_errors)
+                all_papers.extend(papers)
+                errors.extend(source_errors)
+                if succeeded:
                     successful_sources.add(source)
-                    health[source]["requests_succeeded"] += 1
-                    health[source]["records_returned"] += len(papers)
-                    if source not in window_sources:
-                        window_sources.append(source)
-                except Exception as exc:  # Providers fail independently by design.
-                    error = {
-                        "source": source, "window": f"{start}/{end}", "query": query,
-                        "error": clean_text(exc),
-                    }
-                    errors.append(error)
-                    health[source]["errors"].append(error)
-                if args.delay:
-                    time.sleep(args.delay)
+                    window_sources.append(source)
         normalized = deduplicate(all_papers)
-        selected = select_papers(normalized, queries, args.count, args.sort)
+        selected = select_papers(normalized, queries, args.count, args.sort, exclude_ids=exclude_set)
         searched.append({
             "from": start, "to": end, "sources_completed": window_sources,
             "candidate_count": len(normalized),
@@ -689,7 +936,7 @@ def search(args: argparse.Namespace) -> dict[str, Any]:
             break
 
     candidates = deduplicate(all_papers)
-    selected = select_papers(candidates, queries, args.count, args.sort)
+    selected = select_papers(candidates, queries, args.count, args.sort, exclude_ids=exclude_set)
     screening_summary = annotate_screening(candidates, selected, queries)
     if args.sort == "relevance":
         candidates.sort(
@@ -701,7 +948,10 @@ def search(args: argparse.Namespace) -> dict[str, Any]:
             key=lambda p: (p.get("first_available_date", ""), p.get("relevance_score", 0)),
             reverse=True,
         )
-    final_window = searched[-1] if searched else {"from": "", "to": ""}
+    final_window = {
+        "from": searched[-1].get("from", "") if searched else "",
+        "to": searched[0].get("to", "") if searched else "",
+    }
     for source_health in health.values():
         if source_health["requests_succeeded"] == 0:
             source_health["status"] = "failed"
@@ -728,10 +978,10 @@ def search(args: argparse.Namespace) -> dict[str, Any]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Search multiple scholarly sources and return normalized JSON."
+        description="Search multiple scholarly sources and return normalized JSON or Markdown brief."
     )
-    parser.add_argument("--topic", required=True, help="Human-readable topic label")
-    parser.add_argument("--query", action="append", help="English scholarly query; first value is the required topical anchor, later values are synonyms")
+    parser.add_argument("--topic", help="Human-readable topic label")
+    parser.add_argument("--query", action="append", help="English scholarly query; first value is the topical anchor, later values are synonyms")
     parser.add_argument("--from", dest="date_from", help="Inclusive start date (YYYY-MM-DD)")
     parser.add_argument("--to", dest="date_to", help="Inclusive end date (YYYY-MM-DD)")
     parser.add_argument("--mode", choices=("brief", "scan"), default="brief", help="brief selects 2 papers; scan selects 8 unless --count overrides it")
@@ -741,7 +991,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-source-results", type=int, default=30, help="Maximum candidates requested per source/query")
     parser.add_argument("--timeout", type=int, default=35, help="Per-request timeout in seconds")
     parser.add_argument("--delay", type=float, default=0.0, help="Optional delay between provider requests")
-    parser.add_argument("--output", help="Write JSON to this path instead of stdout")
+    parser.add_argument("--exclude-ids", help="Comma-separated IDs or path to file with seen IDs to exclude")
+    parser.add_argument("--format", choices=("json", "markdown"), default="json", help="Output format: json or formatted markdown skeleton")
+    parser.add_argument("--health-check", action="store_true", help="Perform a fast 5-source connectivity probe and exit")
+    parser.add_argument("--output", help="Write output to this path instead of stdout")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON")
     return parser
 
@@ -749,20 +1002,38 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.health_check:
+        results = health_check()
+        payload = json.dumps(results, ensure_ascii=False, indent=2) + "\n"
+        if args.output:
+            Path(args.output).write_text(payload, encoding="utf-8")
+        else:
+            sys.stdout.write(payload)
+        return 0
+
+    if not args.topic:
+        parser.error("--topic is required unless --health-check is specified")
+
     if args.count is None:
         args.count = 2 if args.mode == "brief" else 8
     if args.count < 1:
         parser.error("--count must be at least 1")
     if args.max_source_results < args.count:
         parser.error("--max-source-results must be at least --count")
+
     try:
         result = search(args)
     except ValueError as exc:
         parser.error(str(exc))
-    payload = json.dumps(result, ensure_ascii=False, indent=2 if args.pretty else None) + "\n"
+
+    if args.format == "markdown":
+        payload = render_markdown_brief(result) + "\n"
+    else:
+        payload = json.dumps(result, ensure_ascii=False, indent=2 if args.pretty else None) + "\n"
+
     if args.output:
-        with open(args.output, "w", encoding="utf-8") as handle:
-            handle.write(payload)
+        Path(args.output).write_text(payload, encoding="utf-8")
     else:
         sys.stdout.write(payload)
     return 0

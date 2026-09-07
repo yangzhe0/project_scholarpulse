@@ -1,37 +1,974 @@
 {
   "schema_version": "1.0",
-  "skill_version": "1.0.0-beta",
+  "skill_version": "2.0.0",
   "entries": [
-    {"aliases_zh": ["土卫九", "土卫9", "菲比"], "anchor_en": "Phoebe Saturn", "synonyms_en": ["Saturn IX", "Saturn irregular moon Phoebe"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["海卫一", "海卫1", "特里同"], "anchor_en": "Triton Neptune", "synonyms_en": ["Neptune I", "Neptune satellite Triton"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["系外行星", "太阳系外行星"], "anchor_en": "exoplanet", "synonyms_en": ["extrasolar planet"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["快速射电暴", "快速射电爆发"], "anchor_en": "fast radio burst", "synonyms_en": ["FRB"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["引力波"], "anchor_en": "gravitational wave", "synonyms_en": ["gravitational-wave astronomy"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["黑洞"], "anchor_en": "black hole", "synonyms_en": ["black-hole astrophysics"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["中子星"], "anchor_en": "neutron star", "synonyms_en": ["compact star"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["星系形成", "星系演化"], "anchor_en": "galaxy formation and evolution", "synonyms_en": ["galaxy evolution"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["原行星盘"], "anchor_en": "protoplanetary disk", "synonyms_en": ["circumstellar disk planet formation"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["恒星掩星"], "anchor_en": "stellar occultation", "synonyms_en": ["occultation astronomy"], "domain": "astronomy", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["人工智能"], "anchor_en": "artificial intelligence", "synonyms_en": ["AI"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["大语言模型", "大型语言模型"], "anchor_en": "large language model", "synonyms_en": ["LLM"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["智能体记忆", "代理记忆"], "anchor_en": "memory for language model agents", "synonyms_en": ["agent memory", "long-term memory for LLM agents"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["智能体", "AI智能体", "人工智能智能体", "AI代理"], "anchor_en": "AI agent", "synonyms_en": ["language model agent", "autonomous agent"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["多智能体", "多代理系统"], "anchor_en": "multi-agent system", "synonyms_en": ["multi-agent collaboration"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["检索增强生成"], "anchor_en": "retrieval-augmented generation", "synonyms_en": ["RAG"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["模型上下文协议"], "anchor_en": "Model Context Protocol", "synonyms_en": ["MCP"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["工具调用", "函数调用"], "anchor_en": "tool use by language models", "synonyms_en": ["LLM tool calling", "function calling language model"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["具身智能"], "anchor_en": "embodied artificial intelligence", "synonyms_en": ["embodied AI", "embodied agent"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["强化学习"], "anchor_en": "reinforcement learning", "synonyms_en": ["RL"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["代码智能体", "编程智能体"], "anchor_en": "software engineering agent", "synonyms_en": ["coding agent", "code agent"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["模型幻觉", "大模型幻觉"], "anchor_en": "hallucination in large language models", "synonyms_en": ["LLM hallucination"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["上下文工程"], "anchor_en": "context engineering for language models", "synonyms_en": ["LLM context engineering"], "domain": "ai", "sources": ["arxiv", "crossref"]},
-    {"aliases_zh": ["药物发现", "新药发现"], "anchor_en": "drug discovery", "synonyms_en": ["drug development"], "domain": "biomedicine", "sources": ["europe-pmc", "biorxiv", "medrxiv", "crossref"]},
-    {"aliases_zh": ["癌症免疫治疗", "肿瘤免疫治疗"], "anchor_en": "cancer immunotherapy", "synonyms_en": ["cancer immune therapy", "tumor immunotherapy"], "domain": "biomedicine", "sources": ["europe-pmc", "biorxiv", "medrxiv", "crossref"]},
-    {"aliases_zh": ["单细胞RNA测序", "单细胞转录组测序"], "anchor_en": "single-cell RNA sequencing", "synonyms_en": ["scRNA-seq", "single-cell transcriptomics"], "domain": "biomedicine", "sources": ["europe-pmc", "biorxiv", "medrxiv", "crossref"]},
-    {"aliases_zh": ["基因编辑", "CRISPR基因编辑"], "anchor_en": "CRISPR genome editing", "synonyms_en": ["gene editing", "CRISPR-Cas genome editing"], "domain": "biomedicine", "sources": ["europe-pmc", "biorxiv", "medrxiv", "crossref"]},
-    {"aliases_zh": ["蛋白质结构预测"], "anchor_en": "protein structure prediction", "synonyms_en": ["computational protein structure prediction"], "domain": "biomedicine", "sources": ["europe-pmc", "biorxiv", "crossref"]},
-    {"aliases_zh": ["临床试验"], "anchor_en": "clinical trial", "synonyms_en": ["randomized controlled trial"], "domain": "biomedicine", "sources": ["europe-pmc", "medrxiv", "crossref"]},
-    {"aliases_zh": ["医学影像"], "anchor_en": "medical imaging", "synonyms_en": ["medical image analysis"], "domain": "biomedicine", "sources": ["europe-pmc", "medrxiv", "crossref"]},
-    {"aliases_zh": ["生物标志物", "生物标记物"], "anchor_en": "biomarker", "synonyms_en": ["biological marker"], "domain": "biomedicine", "sources": ["europe-pmc", "biorxiv", "medrxiv", "crossref"]}
+    {
+      "aliases_zh": [
+        "土卫九",
+        "土卫9",
+        "菲比"
+      ],
+      "anchor_en": "Phoebe Saturn",
+      "synonyms_en": [
+        "Saturn IX",
+        "Saturn irregular moon Phoebe"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "海卫一",
+        "海卫1",
+        "特里同"
+      ],
+      "anchor_en": "Triton Neptune",
+      "synonyms_en": [
+        "Neptune I",
+        "Neptune satellite Triton"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "系外行星",
+        "太阳系外行星"
+      ],
+      "anchor_en": "exoplanet",
+      "synonyms_en": [
+        "extrasolar planet"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "快速射电暴",
+        "快速射电爆发"
+      ],
+      "anchor_en": "fast radio burst",
+      "synonyms_en": [
+        "FRB"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "引力波"
+      ],
+      "anchor_en": "gravitational wave",
+      "synonyms_en": [
+        "gravitational-wave astronomy"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "黑洞"
+      ],
+      "anchor_en": "black hole",
+      "synonyms_en": [
+        "black-hole astrophysics"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "中子星"
+      ],
+      "anchor_en": "neutron star",
+      "synonyms_en": [
+        "compact star"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "星系形成",
+        "星系演化"
+      ],
+      "anchor_en": "galaxy formation and evolution",
+      "synonyms_en": [
+        "galaxy evolution"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "原行星盘"
+      ],
+      "anchor_en": "protoplanetary disk",
+      "synonyms_en": [
+        "circumstellar disk planet formation"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "恒星掩星"
+      ],
+      "anchor_en": "stellar occultation",
+      "synonyms_en": [
+        "occultation astronomy"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "人工智能"
+      ],
+      "anchor_en": "artificial intelligence",
+      "synonyms_en": [
+        "AI"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "大语言模型",
+        "大型语言模型"
+      ],
+      "anchor_en": "large language model",
+      "synonyms_en": [
+        "LLM"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "智能体记忆",
+        "代理记忆"
+      ],
+      "anchor_en": "memory for language model agents",
+      "synonyms_en": [
+        "agent memory",
+        "long-term memory AND LLM agents"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "智能体",
+        "AI智能体",
+        "人工智能智能体",
+        "AI代理"
+      ],
+      "anchor_en": "AI agent",
+      "synonyms_en": [
+        "language model agent",
+        "autonomous agent"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "多智能体",
+        "多代理系统"
+      ],
+      "anchor_en": "multi-agent system",
+      "synonyms_en": [
+        "multi-agent collaboration"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "检索增强生成"
+      ],
+      "anchor_en": "retrieval-augmented generation",
+      "synonyms_en": [
+        "RAG"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "模型上下文协议"
+      ],
+      "anchor_en": "Model Context Protocol",
+      "synonyms_en": [
+        "MCP"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "工具调用",
+        "函数调用"
+      ],
+      "anchor_en": "tool use by language models",
+      "synonyms_en": [
+        "LLM tool calling",
+        "function calling language model"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "具身智能"
+      ],
+      "anchor_en": "embodied artificial intelligence",
+      "synonyms_en": [
+        "embodied AI",
+        "embodied agent"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "强化学习"
+      ],
+      "anchor_en": "reinforcement learning",
+      "synonyms_en": [
+        "RL"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "代码智能体",
+        "编程智能体"
+      ],
+      "anchor_en": "software engineering agent",
+      "synonyms_en": [
+        "coding agent",
+        "code agent"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "模型幻觉",
+        "大模型幻觉"
+      ],
+      "anchor_en": "hallucination in large language models",
+      "synonyms_en": [
+        "LLM hallucination"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "上下文工程"
+      ],
+      "anchor_en": "context engineering for language models",
+      "synonyms_en": [
+        "LLM context engineering"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "扩散模型",
+        "生成扩散模型"
+      ],
+      "anchor_en": "diffusion model",
+      "synonyms_en": [
+        "diffusion probabilistic model",
+        "score-based generative model"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "多模态大模型",
+        "视觉语言模型"
+      ],
+      "anchor_en": "multimodal large language model",
+      "synonyms_en": [
+        "MLLM",
+        "vision-language model",
+        "VLM"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "世界模型"
+      ],
+      "anchor_en": "world model",
+      "synonyms_en": [
+        "video world model",
+        "world model for autonomous agents"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "参数高效微调",
+        "LoRA微调",
+        "大模型微调"
+      ],
+      "anchor_en": "parameter-efficient fine-tuning",
+      "synonyms_en": [
+        "PEFT",
+        "LoRA low-rank adaptation"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "模型量化",
+        "大模型量化",
+        "模型压缩"
+      ],
+      "anchor_en": "quantization of large language models",
+      "synonyms_en": [
+        "LLM quantization",
+        "model compression for LLMs"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "长上下文",
+        "长文本大模型"
+      ],
+      "anchor_en": "long-context language models",
+      "synonyms_en": [
+        "extended context length",
+        "long-context attention"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "模型对齐",
+        "人类偏好对齐"
+      ],
+      "anchor_en": "alignment for large language models",
+      "synonyms_en": [
+        "RLHF",
+        "direct preference optimization DPO"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "具身导航",
+        "视觉语言动作模型"
+      ],
+      "anchor_en": "vision-language-action model",
+      "synonyms_en": [
+        "VLA model",
+        "embodied navigation robotics"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "图神经网络"
+      ],
+      "anchor_en": "graph neural network",
+      "synonyms_en": [
+        "GNN",
+        "graph convolutional network"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "联邦学习"
+      ],
+      "anchor_en": "federated learning",
+      "synonyms_en": [
+        "collaborative machine learning"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "知识图谱"
+      ],
+      "anchor_en": "knowledge graph",
+      "synonyms_en": [
+        "knowledge graph reasoning"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "科学计算大模型",
+        "AI科学",
+        "AI for Science"
+      ],
+      "anchor_en": "AI for science",
+      "synonyms_en": [
+        "scientific machine learning",
+        "AI for scientific discovery"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "端到端自动驾驶"
+      ],
+      "anchor_en": "end-to-end autonomous driving",
+      "synonyms_en": [
+        "vision-centric autonomous driving"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "移动智能体",
+        "手机智能体"
+      ],
+      "anchor_en": "mobile device agent",
+      "synonyms_en": [
+        "GUI agent for smartphone",
+        "mobile phone agent"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "思维链",
+        "思维链推理"
+      ],
+      "anchor_en": "chain-of-thought reasoning",
+      "synonyms_en": [
+        "CoT reasoning",
+        "step-by-step reasoning LLM"
+      ],
+      "domain": "ai",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "药物发现",
+        "新药发现"
+      ],
+      "anchor_en": "drug discovery",
+      "synonyms_en": [
+        "drug development",
+        "computational drug design"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "biorxiv",
+        "medrxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "癌症免疫治疗",
+        "肿瘤免疫治疗"
+      ],
+      "anchor_en": "cancer immunotherapy",
+      "synonyms_en": [
+        "cancer immune therapy",
+        "tumor immunotherapy"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "biorxiv",
+        "medrxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "单细胞RNA测序",
+        "单细胞转录组测序"
+      ],
+      "anchor_en": "single-cell RNA sequencing",
+      "synonyms_en": [
+        "scRNA-seq",
+        "single-cell transcriptomics"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "biorxiv",
+        "medrxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "基因编辑",
+        "CRISPR基因编辑"
+      ],
+      "anchor_en": "CRISPR genome editing",
+      "synonyms_en": [
+        "gene editing",
+        "CRISPR-Cas genome editing"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "biorxiv",
+        "medrxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "蛋白质结构预测"
+      ],
+      "anchor_en": "protein structure prediction",
+      "synonyms_en": [
+        "computational protein structure prediction",
+        "AlphaFold structure"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "biorxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "临床试验"
+      ],
+      "anchor_en": "clinical trial",
+      "synonyms_en": [
+        "randomized controlled trial"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "medrxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "医学影像"
+      ],
+      "anchor_en": "medical imaging",
+      "synonyms_en": [
+        "medical image analysis",
+        "deep learning medical imaging"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "medrxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "生物标志物",
+        "生物标记物"
+      ],
+      "anchor_en": "biomarker",
+      "synonyms_en": [
+        "biological marker"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "biorxiv",
+        "medrxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "合成生物学"
+      ],
+      "anchor_en": "synthetic biology",
+      "synonyms_en": [
+        "metabolic engineering"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "biorxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "神经退行性疾病",
+        "阿尔茨海默病"
+      ],
+      "anchor_en": "neurodegenerative disease",
+      "synonyms_en": [
+        "Alzheimer's disease pathology"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "medrxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "疫苗研发",
+        "mRNA疫苗"
+      ],
+      "anchor_en": "mRNA vaccine development",
+      "synonyms_en": [
+        "mRNA vaccine immunogenicity"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "biorxiv",
+        "medrxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "肠道微生物",
+        "肠道菌群"
+      ],
+      "anchor_en": "gut microbiome",
+      "synonyms_en": [
+        "gut microbiota human health"
+      ],
+      "domain": "biomedicine",
+      "sources": [
+        "europe-pmc",
+        "biorxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "天然卫星",
+        "行星卫星"
+      ],
+      "anchor_en": "natural satellite",
+      "synonyms_en": [
+        "planetary satellite",
+        "planetary moons"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "不规则卫星"
+      ],
+      "anchor_en": "irregular satellite",
+      "synonyms_en": [
+        "irregular moon",
+        "irregular planetary satellite"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "规则卫星"
+      ],
+      "anchor_en": "regular satellite",
+      "synonyms_en": [
+        "regular moon"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "轨道共振"
+      ],
+      "anchor_en": "orbital resonance",
+      "synonyms_en": [
+        "mean-motion resonance",
+        "secular resonance"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "轨道摄动",
+        "天体摄动"
+      ],
+      "anchor_en": "orbital perturbation",
+      "synonyms_en": [
+        "gravitational perturbation orbit",
+        "orbital perturbations"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "轨道演化"
+      ],
+      "anchor_en": "orbital evolution",
+      "synonyms_en": [
+        "dynamical evolution orbit",
+        "satellite orbital evolution"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "轨道动力学",
+        "天体轨道动力学"
+      ],
+      "anchor_en": "orbital dynamics",
+      "synonyms_en": [
+        "celestial orbital dynamics",
+        "satellite dynamics"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "木卫二",
+        "欧罗巴"
+      ],
+      "anchor_en": "Europa Jupiter",
+      "synonyms_en": [
+        "Jupiter II",
+        "Europa moon ocean"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "土卫六",
+        "泰坦"
+      ],
+      "anchor_en": "Titan Saturn",
+      "synonyms_en": [
+        "Saturn VI",
+        "Titan moon atmosphere"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "木卫四",
+        "卡利斯托"
+      ],
+      "anchor_en": "Callisto Jupiter",
+      "synonyms_en": [
+        "Jupiter IV",
+        "Callisto satellite"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "木卫一",
+        "伊娥"
+      ],
+      "anchor_en": "Io Jupiter",
+      "synonyms_en": [
+        "Jupiter I",
+        "Io volcanism moon"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    },
+    {
+      "aliases_zh": [
+        "木卫三",
+        "甘尼伯"
+      ],
+      "anchor_en": "Ganymede Jupiter",
+      "synonyms_en": [
+        "Jupiter III",
+        "Ganymede magnetic field"
+      ],
+      "domain": "astronomy",
+      "sources": [
+        "arxiv",
+        "crossref"
+      ]
+    }
   ]
 }
