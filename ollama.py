@@ -40,6 +40,7 @@ def summarize(paper: dict, direction: dict, config: dict) -> str:
         "model": ollama.get("model", "qwen3:30b"),
         "prompt": prompt.format(**fields),
         "stream": False,
+        "think": ollama.get("think", "low"),
         "options": {"temperature": ollama.get("temperature", 0.2)},
     }).encode("utf-8")
     request = urllib.request.Request(
